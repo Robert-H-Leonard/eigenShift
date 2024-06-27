@@ -1,4 +1,4 @@
-module task-consensus
+module github.com/Robert-H-Leonard/eigenShift
 
 go 1.21
 
