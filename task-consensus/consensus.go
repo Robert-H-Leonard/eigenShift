@@ -75,10 +75,11 @@ func NewConcensusFSM[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.Privat
 	}
 }
 
-func (p *PriceFSM[T, K, S]) ConfigureRaftBindings(rpcUrl string, httpUrl string, fileStorageDirectory string) {
+func (p *PriceFSM[T, K, S]) ConfigureRaftBindings(rpcUrl string, httpUrl string, fileStorageDirectory string, operatorId [32]byte) {
 	p.RaftBind = rpcUrl
 	p.RaftDir = fileStorageDirectory
 	p.RaftHttpBind = httpUrl
+	p.operatorId = operatorId
 }
 
 func (p *PriceFSM[T, K, S]) ConfigureTaskCallbacks(onTaskRequestFn onTaskRequest[T, K], onTaskResponseFn onSubmitTaskToLeader[T, K, S]) {
