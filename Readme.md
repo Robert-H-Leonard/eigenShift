@@ -7,7 +7,13 @@ EigenLayer is a protocol on Ethereum that introduces restaking, allowing stakers
 In the context of Actively Validated Services (AVS) on the EigenLayer protocol, EigenLayer's sdk does currenctly does not support a consensus mechanism for operators to act as Aggregators for task. Instead AVS developers must build manual intervention or a centralized entities to manage task assignments, which can introduce points of failure and reduce trust in the network.
 
 ### How does EigenShift solve this? ###
-The EigenShift wraps around the [raft consensus protocol](https://github.com/hashicorp/raft), enabling operators to act as Aggregators and provides a trustless, programmatic rotation of Aggregators. This package leverages Raft for leader election between operators to elect Aggregators, tailored to handle EigenLayer tasks and operator BLS signatures. This pakcage also provides a mechanism for AVS developers to design how their AVS rotates Aggregators, and ensures consistent, reliable task validation and submission, enhancing the robustness and security of AVS deployments.
+The EigenShift wraps around the [raft consensus protocol](https://github.com/hashicorp/raft), enabling operators to act as Aggregators and provides a trustless, programmatic framework to allow develoeprs to define how task are created, processed and submitted on-chain. This package leverages Raft for leader election between operators to elect Aggregators, tailored to handle EigenLayer tasks and operator BLS signatures. This pakcage also provides a mechanism for AVS developers to design how their AVS rotates Aggregators, and ensures consistent, reliable task validation and submission, enhancing the robustness and security of AVS deployments.
+
+Thanks to using Go generics this package only has 3 external dependencies and provides developers with a framework to define their custom operator consesus:
+
+- EigenLayer's go sdk: https://github.com/Layr-Labs/eigensdk-go
+- Go ethereum: https://github.com/ethereum/go-ethereum
+- Raft Protocol Implementation: https://github.com/hashicorp/raft
 
 ### Example AVS using this protocol
 
