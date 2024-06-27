@@ -1,4 +1,4 @@
-package eigenshift
+package main
 
 import (
 	"bytes"
