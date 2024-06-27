@@ -31,3 +31,19 @@ Here's how it is integrated:
 
 This ensures a robust, decentralized process for task aggregation in the AVS. Check it out here: 
 [Price Oracle AVS Example](https://github.com/Robert-H-Leonard/price-oracle-avs)
+
+## Why pick the raft protocol for consensus?
+Several companies use the Raft protocol for maintaining consensus in distributed systems:
+
+1. **HashiCorp**: Raft is integral to several [HashiCorp products](https://www.hashicorp.com/resources/distributed-consensus-hashicorp-raft) such as Consul, Nomad, and Vault. These tools rely on Raft to manage leader elections, log replication, and ensuring consistency across nodes in a distributed system.
+
+2. **Apache Kafka**: The [Kafka ecosystem](https://developer.confluent.io/learn/kraft/) uses the KRaft protocol, a variant of Raft, to manage metadata and replace the dependency on ZooKeeper. This simplifies Kafka's architecture and improves stability, scalability, and ease of management.
+
+3. **Oracle**: [Oracle's Globally Distributed Database](https://blogs.oracle.com/database/post/raft-replication-in-distributed-23c) employs Raft for replicating data across shards. This ensures consistency and fault tolerance in distributed database environments, providing robust data management even in the presence of failures.
+
+4. **IBM**: [Hyperledger Fabric](https://github.com/IBM/raft-fabric-sample), an open-source blockchain framework developed by IBM, uses the Raft protocol for its ordering service, ensuring that transactions are ordered and committed correctly across the blockchain network.
+
+These examples highlight Raft's versatility and reliability in various distributed systems, ensuring data consistency and fault tolerance across different applications and industries.
+
+We choose to manually integrate with the raft protocol to provide a minimal framework and lightweight raft server with the context of AVS task generation, aggregation and submission.
+
