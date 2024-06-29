@@ -128,6 +128,8 @@ type TaskConsensusManager[T any, K any, S any] interface {
 	// Method to trigger the current leader of a cluster to send a task request to follower
 	// Only the leader can call this method
 	LeaderSendTaskRequestToFollowers(taskRequest T) error
+
+	GetHttpBindingUrl() string
 }
 
 func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.PrivateKey, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client, logger logging.Logger, callbacks TaskConsensusCallbacks[T, K, S], operatorRaftConfig OperatorRaftConfig) (TaskConsensusManager[T, K, S], error) {
@@ -290,6 +292,10 @@ func (p *TaskConsensusEngine[T, K, S]) LeaderSendTaskRequestToFollowers(taskRequ
 
 	p.logger.Info("Task request sent to followers")
 	return resp.Error()
+}
+
+func (p *TaskConsensusEngine[T, K, S]) GetHttpBindingUrl() string {
+	return p.RaftHttpBind
 }
 
 ///////////// Internal consensus engine methods ///////////////
