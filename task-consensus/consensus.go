@@ -107,7 +107,7 @@ type TaskConsensusCallbacks[T any, K any, S any] struct {
 // Type S is the bls signed response type submitted to the leader
 type onTaskRequest[T any, K any] func(taskRequest T) (taskResponses []K, err error)
 type onSubmitTaskToLeader[T any, K any, S any] func(taskRequest T, taskResponse []K) (signedResponse S, leaderUrl string, err error)
-type onLeaderProcessTaskResponse[K any] func(signedResponse K, w http.ResponseWriter) (taskIndex uint32, taskResponseDigest [32]byte)
+type onLeaderProcessTaskResponse[K any] func(taskResponse K, w http.ResponseWriter) (taskIndex uint32, taskResponseDigest [32]byte)
 type isRegisteredOperator func(operatorAddress common.Address) (bool, error)
 type fetchOperatorUrl func(operatorAddress common.Address) (OperatorRaftConfig, error)
 
