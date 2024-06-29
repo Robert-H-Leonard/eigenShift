@@ -12,43 +12,30 @@ import (
 	"github.com/Layr-Labs/eigensdk-go/chainio/clients/eth"
 	"github.com/Layr-Labs/eigensdk-go/logging"
 	blsagg "github.com/Layr-Labs/eigensdk-go/services/bls_aggregation"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-type IPriceFSM interface {
-	Join(nodeID, addr string) error
-	TriggerElection()
-}
-
-type onLeaderProcessBlsSignedResponse[K any] func(signedResponse K, w http.ResponseWriter) (taskIndex uint32, taskResponseDigest [32]byte) // Method which is executed when a follower operator wants to submit a task to the current leader
-type isValidOperator func(operatorAddress common.Address) (bool, error)
-type fetchOperatorUrl func(operatorAddress common.Address) (struct {
-	HttpUrl string
-	RpcUrl  string
-}, error)
-
 // Type K is the task response submitted from followers to the leader
 type Service[K any] struct {
-	addr     string
-	ln       net.Listener
-	logger   logging.Logger
-	priceFSM IPriceFSM
+	addr   string
+	ln     net.Listener
+	logger logging.Logger
 
-	blsAggregationService            blsagg.BlsAggregationService
-	ethClient                        eth.Client
-	onLeaderProcessBlsSignedResponse onLeaderProcessBlsSignedResponse[K]
-	isValidOperator                  isValidOperator
-	fetchOperatorUrl                 fetchOperatorUrl
+	blsAggregationService       blsagg.BlsAggregationService
+	ethClient                   eth.Client
+	onLeaderProcessTaskResponse onLeaderProcessTaskResponse[K]
+	isValidOperator             isRegisteredOperator
+	fetchOperatorUrl            fetchOperatorUrl
+	onNewOperatorJoiningCluster onNewOperatorJoiningCluster
 }
 
 // New returns an uninitialized HTTP service.
-func NewService[K any](addr string, priceFSM IPriceFSM, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client) *Service[K] {
+func NewService[K any](addr string, onNewOperatorJoiningCluster onNewOperatorJoiningCluster, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client) *Service[K] {
 	return &Service[K]{
-		addr:                  addr,
-		priceFSM:              priceFSM,
-		blsAggregationService: blsAggregationService,
-		ethClient:             ethClient,
+		addr:                        addr,
+		onNewOperatorJoiningCluster: onNewOperatorJoiningCluster,
+		blsAggregationService:       blsAggregationService,
+		ethClient:                   ethClient,
 	}
 }
 
@@ -83,7 +70,7 @@ func (s *Service[K]) Start() error {
 // ServeHTTP allows Service to serve HTTP requests.
 func (s *Service[K]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/submitAvsTask" {
-		s.handlePriceUpdateTaskSubmittion(w, r)
+		s.handleTaskSubmittionToBlsService(w, r)
 	} else if r.URL.Path == "/join" {
 		s.handleJoin(w, r)
 	} else {
@@ -91,6 +78,8 @@ func (s *Service[K]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Operators attempting to join must sign a message with the latest block they are aware of.
+// This endpoint validates the signature is from a valid operator + the latest block is within the last 2 blocks
 func (s *Service[K]) handleJoin(w http.ResponseWriter, r *http.Request) {
 	m := map[string]string{}
 	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
@@ -147,7 +136,7 @@ func (s *Service[K]) handleJoin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validOperatorUrls, err := s.fetchOperatorUrl(crypto.PubkeyToAddress(*sigPublicKey)) // generic callbacks (1. Validate operator address. 2. Fetch operator urls)
+	validOperatorUrls, err := s.fetchOperatorUrl(crypto.PubkeyToAddress(*sigPublicKey))
 
 	if err != nil {
 		s.logger.Warn("Failed to fetch url for operator", "address", crypto.PubkeyToAddress(*sigPublicKey), "error", err)
@@ -183,7 +172,7 @@ func (s *Service[K]) handleJoin(w http.ResponseWriter, r *http.Request) {
 
 	nodeID := crypto.PubkeyToAddress(*sigPublicKey).String()
 
-	if err := s.priceFSM.Join(nodeID, validOperatorUrls.RpcUrl); err != nil {
+	if err := s.onNewOperatorJoiningCluster(nodeID, validOperatorUrls.RpcUrl); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -191,7 +180,7 @@ func (s *Service[K]) handleJoin(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Service[K]) handlePriceUpdateTaskSubmittion(w http.ResponseWriter, r *http.Request) { // handle task submission with 2 generic + 1 callback
+func (s *Service[K]) handleTaskSubmittionToBlsService(w http.ResponseWriter, r *http.Request) { // handle task submission with 2 generic + 1 callback
 
 	var signedResponse SignedTaskResponse[K]
 
@@ -203,7 +192,7 @@ func (s *Service[K]) handlePriceUpdateTaskSubmittion(w http.ResponseWriter, r *h
 	// Submit each price feed source seperatly
 	s.logger.Info("Preparing to submit bls signatures")
 	for i, task := range signedResponse.TaskResponse {
-		taskIndex, taskResponseDigest := s.onLeaderProcessBlsSignedResponse(task, w)
+		taskIndex, taskResponseDigest := s.onLeaderProcessTaskResponse(task, w)
 
 		signature := signedResponse.BlsSignature[i]
 
