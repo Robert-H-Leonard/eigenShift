@@ -132,6 +132,9 @@ type TaskConsensusManager[T any, K any, S any] interface {
 	GetHttpBindingUrl() string
 }
 
+// Type T is the task request type is sent from the leader to followers
+// Type K is the task response type from followers to the leader
+// Type S is the bls signed response type submitted to the leader
 func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.PrivateKey, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client, logger logging.Logger, callbacks TaskConsensusCallbacks[T, K, S], operatorRaftConfig OperatorRaftConfig) (TaskConsensusManager[T, K, S], error) {
 	taskEngine := &TaskConsensusEngine[T, K, S]{
 		logger:                logger, // Update logger to be the same as operator                                               // Replace with callbacks
