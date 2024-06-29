@@ -17,9 +17,9 @@ import (
 
 // Type K is the task response submitted from followers to the leader
 type Service[K any] struct {
-	addr   string
-	ln     net.Listener
-	logger logging.Logger
+	operatorHttpUrl string
+	ln              net.Listener
+	logger          logging.Logger
 
 	blsAggregationService       blsagg.BlsAggregationService
 	ethClient                   eth.Client
@@ -32,7 +32,7 @@ type Service[K any] struct {
 // New returns an uninitialized HTTP service.
 func NewService[K any](addr string, onNewOperatorJoiningCluster onNewOperatorJoiningCluster, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client) *Service[K] {
 	return &Service[K]{
-		addr:                        addr,
+		operatorHttpUrl:             addr,
 		onNewOperatorJoiningCluster: onNewOperatorJoiningCluster,
 		blsAggregationService:       blsAggregationService,
 		ethClient:                   ethClient,
@@ -47,7 +47,7 @@ func (s *Service[K]) Start() error {
 
 	log.Println("Initializing http server")
 
-	ln, err := net.Listen("tcp", s.addr)
+	ln, err := net.Listen("tcp", s.operatorHttpUrl)
 	if err != nil {
 		return err
 	}

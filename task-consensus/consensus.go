@@ -151,7 +151,7 @@ func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.
 
 	// Configure http server
 	taskEngine.httpRaftServer = &Service[K]{
-		addr:                        operatorRaftConfig.OperatorId.LogValue().String(),
+		operatorHttpUrl:             operatorRaftConfig.HttpUrl,
 		onNewOperatorJoiningCluster: taskEngine.Join,
 		blsAggregationService:       blsAggregationService,
 		ethClient:                   ethClient,
