@@ -48,7 +48,7 @@ type OperatorRaftConfig struct {
 	RpcUrl string
 	// Path to directory where raft protocol distributed replicated log is stored
 	FileStorageDirectory string
-	operatorId           sdktypes.OperatorId
+	OperatorId           sdktypes.OperatorId
 }
 
 // Type T is the task request that is sent from the leader to followers
@@ -84,21 +84,21 @@ type TaskConsensusEngine[T any, K any, S any] struct {
 // Type S is the bls signed response type submitted to the leader
 type TaskConsensusCallbacks[T any, K any, S any] struct {
 	// Method that is triggered when a follower receives a task request (T) from the current leader. The follower resonse (K) is returned
-	onTaskRequestFn onTaskRequest[T, K]
+	OnTaskRequestFn onTaskRequest[T, K]
 
 	// Method that is triggered when a follower want to sign their task response (K) with a BLS signature and submit that response to the leader
-	onTaskResponseFn onSubmitTaskToLeader[T, K, S]
+	OnTaskResponseFn onSubmitTaskToLeader[T, K, S]
 
 	// Method that is used to verify that a given operator address
-	isValidOperator isRegisteredOperator
+	IsValidOperator isRegisteredOperator
 
 	// Method that is triggered when the current leader receives a task response (K) from a follower and generatesa taskDigest
 	// The task digest is essentially an unsigned hash of the task fileds and values
-	onLeaderProcessTaskResponse onLeaderProcessTaskResponse[K]
+	OnLeaderProcessTaskResponse onLeaderProcessTaskResponse[K]
 
 	// Method that fetches the raftRpc and http urls for a given operator address
 	// It is up to the AVS developers to implement how operator urls are discovered by other operators
-	fetchOperatorUrl fetchOperatorUrl
+	FetchOperatorUrl fetchOperatorUrl
 }
 
 // Callback type defs
@@ -140,19 +140,19 @@ func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.
 		RaftRpcBind:           operatorRaftConfig.RpcUrl,
 		RaftHttpBind:          operatorRaftConfig.HttpUrl,
 		RaftDir:               operatorRaftConfig.FileStorageDirectory,
-		operatorId:            operatorRaftConfig.operatorId,
+		operatorId:            operatorRaftConfig.OperatorId,
 		callbacks:             callbacks,
 	}
 
 	// Configure http server
 	taskEngine.httpRaftServer = &Service[K]{
-		addr:                        operatorRaftConfig.operatorId.LogValue().String(),
+		addr:                        operatorRaftConfig.OperatorId.LogValue().String(),
 		onNewOperatorJoiningCluster: taskEngine.Join,
 		blsAggregationService:       blsAggregationService,
 		ethClient:                   ethClient,
-		onLeaderProcessTaskResponse: callbacks.onLeaderProcessTaskResponse,
-		isValidOperator:             callbacks.isValidOperator,
-		fetchOperatorUrl:            callbacks.fetchOperatorUrl,
+		onLeaderProcessTaskResponse: callbacks.OnLeaderProcessTaskResponse,
+		isValidOperator:             callbacks.IsValidOperator,
+		fetchOperatorUrl:            callbacks.FetchOperatorUrl,
 		logger:                      logger,
 	}
 
@@ -332,7 +332,7 @@ func (p *TaskConsensusEngine[T, K, S]) Join(operatorId, addr string) error {
 }
 
 func (p *TaskConsensusEngine[T, K, S]) SubmitTaskToLeader(request T, responses []K) error {
-	signedTaskResponse, leaderUrl, err := p.callbacks.onTaskResponseFn(request, responses)
+	signedTaskResponse, leaderUrl, err := p.callbacks.OnTaskResponseFn(request, responses)
 
 	b, err := json.Marshal(signedTaskResponse)
 	if err != nil {
@@ -373,7 +373,7 @@ func (f *TaskConsensusEngine[T, K, S]) Apply(l *raft.Log) interface{} {
 		panic(fmt.Sprintf("failed to unmarshal command: %s", err.Error()))
 	}
 
-	taskResponses, err := f.callbacks.onTaskRequestFn(request)
+	taskResponses, err := f.callbacks.OnTaskRequestFn(request)
 
 	if err != nil {
 		log.Printf("Error submitting task: %v", err)
