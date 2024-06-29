@@ -130,7 +130,7 @@ type TaskConsensusManager[T any, K any, S any] interface {
 	LeaderSendTaskRequestToFollowers(taskRequest T) error
 }
 
-func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.PrivateKey, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client, logger logging.Logger, callbacks TaskConsensusCallbacks[T, K, S], operatorRaftConfig OperatorRaftConfig) (*TaskConsensusManager[T, K, S], error) {
+func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.PrivateKey, blsAggregationService blsagg.BlsAggregationService, ethClient eth.Client, logger logging.Logger, callbacks TaskConsensusCallbacks[T, K, S], operatorRaftConfig OperatorRaftConfig) (TaskConsensusManager[T, K, S], error) {
 	taskEngine := &TaskConsensusEngine[T, K, S]{
 		logger:                logger, // Update logger to be the same as operator                                               // Replace with callbacks
 		blsKeypair:            keyPair,
@@ -166,7 +166,7 @@ func NewAVSConcensusEngine[T any, K any, S any](keyPair *bls.KeyPair, pk *ecdsa.
 
 	var engine TaskConsensusManager[T, K, S] = taskEngine
 
-	return &engine, nil
+	return engine, nil
 }
 
 // Operator initializes raft consenses server if enableSingle is set, and there are no existing peers,
